@@ -1,11 +1,14 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { ReplicateClient, outputUrls } from './replicate.mjs';
+import { ReplicateClient } from './replicate.mjs';
 import { buildInput, describeInputs, readInputSchema } from './inputs.mjs';
 import { DEFAULT_PRESET, PRESETS, resolveModel } from './presets.mjs';
+import { generateVideo, shorten } from './generate.mjs';
+
+export { slugify } from './generate.mjs';
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MAX_PARALLEL = 3;
@@ -83,19 +86,6 @@ async function toImageInput(image, cwd) {
   if (!existsSync(file)) throw new Error(`Image file not found: ${file}`);
   return `data:${type};base64,${(await readFile(file)).toString('base64')}`;
 }
-
-export const slugify = text =>
-  text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '') || 'video';
-
-const timestamp = date => date.toISOString().replace(/\.\d+Z$/, '').replace(/[-:]/g, '').replace('T', '-');
-
-const extensionOf = url => {
-  const ext = path.extname(new URL(url).pathname);
-  return /^\.\w{2,5}$/.test(ext) ? ext : '.mp4';
-};
-
-const shorten = input =>
-  Object.fromEntries(Object.entries(input).map(([k, v]) => [k, typeof v === 'string' && v.startsWith('data:') ? `${v.slice(0, 30)}…` : v]));
 
 // Runs up to `limit` tasks at a time and returns their settled results in order.
 async function runLimited(tasks, limit) {
@@ -235,40 +225,17 @@ export async function run(argv, deps = {}) {
 
     const tasks = jobs.map((job, index) => async () => {
       const label = jobs.length > 1 ? `[${index + 1}/${jobs.length}] ` : '';
-      let prediction = await client.createPrediction(model, job.input);
-      onPrediction(client, prediction);
-      log(`${label}Started (id ${prediction.id})`);
-      let lastStatus = prediction.status;
-      prediction = await client.wait(prediction, {
+      const { files: saved } = await generateVideo({
+        client, model, job, outDir, fetch, now,
         timeoutMs: timeoutMin * 60_000,
-        onUpdate: (p, ms) => {
-          if (p.status !== lastStatus) {
-            lastStatus = p.status;
-            log(`${label}${p.status} (${Math.round(ms / 1000)}s)`);
-          }
+        onPrediction: prediction => {
+          onPrediction(client, prediction);
+          log(`${label}Started (id ${prediction.id})`);
+        },
+        onStatus: (status, ms) => {
+          if (ms !== undefined) log(`${label}${status} (${Math.round(ms / 1000)}s)`);
         },
       });
-
-      const urls = outputUrls(prediction.output);
-      if (!urls.length) throw new Error('The model finished but returned no video.');
-      const base = `${timestamp(now())}-${slugify(job.prompt)}${job.variation ? `-v${job.variation}` : ''}`;
-      const saved = [];
-      for (const [j, url] of urls.entries()) {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Could not download the video (HTTP ${res.status}): ${url}`);
-        const file = path.join(outDir, `${base}${urls.length > 1 ? `-${j + 1}` : ''}${extensionOf(url)}`);
-        await writeFile(file, Buffer.from(await res.arrayBuffer()));
-        saved.push(file);
-      }
-      await writeFile(path.join(outDir, `${base}.json`), JSON.stringify({
-        prompt: job.prompt,
-        model,
-        input: shorten(job.input),
-        prediction_id: prediction.id,
-        created_at: prediction.created_at,
-        predict_time_seconds: prediction.metrics?.predict_time,
-        files: saved.map(f => path.basename(f)),
-      }, null, 2));
       saved.forEach(f => log(`${label}✅ Saved ${f}`));
       return saved;
     });

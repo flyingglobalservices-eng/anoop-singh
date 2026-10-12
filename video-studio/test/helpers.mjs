@@ -64,6 +64,7 @@ export function fakeReplicate({ schema = HAILUO_SCHEMA, pollsUntilDone = 2, fina
     const path = url.replace('https://api.replicate.com/v1', '');
     if (error && path === error.path) return json(error.status, { detail: error.detail });
 
+    if (method === 'GET' && path === '/account') return json(200, { username: 'tester' });
     let m;
     if (method === 'GET' && (m = /^\/models\/([^/]+)\/([^/]+)$/.exec(path))) {
       return json(200, { owner: m[1], name: m[2], latest_version: { id: 'abc123', openapi_schema: schema } });
@@ -77,6 +78,7 @@ export function fakeReplicate({ schema = HAILUO_SCHEMA, pollsUntilDone = 2, fina
     }
     if (method === 'GET' && (m = /^\/predictions\/(\w+)$/.exec(path))) {
       const p = predictions.get(m[1]);
+      if (p.status === 'canceled') return json(200, p);
       p.polls++;
       if (p.polls >= pollsUntilDone) {
         p.status = finalStatus;

@@ -60,7 +60,8 @@ function coerce(key, raw, prop) {
 
 // options: { prompt, negative, resolution, duration, aspect, seed, image, fps, set: {key: rawValue} }
 // Returns { input, warnings } or throws with a user-friendly message.
-export function buildInput(schema, options) {
+// flagHints: name the CLI flag that supplies a missing required input.
+export function buildInput(schema, options, { flagHints = true } = {}) {
   const { properties, required } = schema;
   const input = {};
   const warnings = [];
@@ -110,6 +111,7 @@ export function buildInput(schema, options) {
   const missing = required.filter(k => !(k in input) && properties[k]?.default === undefined);
   if (missing.length) {
     const hint = k => {
+      if (!flagHints) return k;
       const option = Object.keys(ALIASES).find(o => ALIASES[o].includes(k));
       return option ? `${k} (use ${OPTION_FLAGS[option]})` : `${k} (use --set ${k}=...)`;
     };

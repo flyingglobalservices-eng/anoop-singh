@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Studio</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">▶</span>
+      <span>Video Studio</span>
+    </div>
+    <button type="button" id="connection" class="pill" hidden></button>
+  </header>
+
+  <main>
+    <!-- Shown until a Replicate token is saved -->
+    <section id="setup" class="card setup" hidden>
+      <h1>Connect to Replicate</h1>
+      <p>Video Studio uses AI video models on Replicate. You pay Replicate per video; this app is free.</p>
+      <ol>
+        <li>Sign up at <a href="https://replicate.com" target="_blank" rel="noopener">replicate.com</a> and add a payment method under <a href="https://replicate.com/account/billing" target="_blank" rel="noopener">Billing</a>.</li>
+        <li>Create a token at <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noopener">API tokens</a> and paste it here.</li>
+      </ol>
+      <form id="token-form" class="token-row">
+        <label class="sr-only" for="token">Replicate API token</label>
+        <input id="token" type="password" placeholder="r8_…" autocomplete="off" required>
+        <button type="submit" class="btn primary">Connect</button>
+      </form>
+      <p class="muted small">The token is saved in <code>video-studio/.env</code> on this computer and never shown in the browser again.</p>
+      <p id="token-error" class="alert error" hidden></p>
+    </section>
+
+    <div id="studio" class="layout" hidden>
+      <form id="create" class="card create" novalidate>
+        <h2>Create a video</h2>
+
+        <label class="field">
+          <span class="label">Describe your video</span>
+          <textarea id="prompt" rows="5" maxlength="4000" placeholder="A drone shot over misty Himalayan mountains at sunrise, golden light, cinematic" required></textarea>
+        </label>
+        <div class="examples" aria-label="Example prompts">
+          <span class="muted small">Try:</span>
+          <button type="button" class="chip" data-example="Chai being poured into a glass in slow motion, close-up, warm morning light, steam rising">Chai pour</button>
+          <button type="button" class="chip" data-example="A paper boat sailing through a rain puddle on a busy Mumbai street, low angle, cinematic">Paper boat</button>
+          <button type="button" class="chip" data-example="Aerial drone shot of the Taj Mahal at sunrise, mist over the river, slow forward glide">Taj Mahal</button>
+        </div>
+
+        <div class="field">
+          <label class="label" for="model">Model</label>
+          <select id="model"></select>
+          <div id="custom-model-row" class="custom-model" hidden>
+            <input id="custom-model" placeholder="owner/model-name" aria-label="Replicate model name">
+            <button type="button" id="load-model" class="btn">Load</button>
+          </div>
+          <p id="model-about" class="muted small"></p>
+        </div>
+
+        <div id="settings-status" class="muted small"></div>
+        <div id="uploads"></div>
+        <div id="main-settings" class="settings-grid"></div>
+        <details id="advanced" hidden>
+          <summary>Advanced settings</summary>
+          <div id="advanced-settings" class="settings-grid"></div>
+        </details>
+
+        <div class="generate-row">
+          <label class="count">
+            <span class="sr-only">Number of variations</span>
+            <select id="count">
+              <option value="1">1 video</option>
+              <option value="2">2 variations</option>
+              <option value="3">3 variations</option>
+              <option value="4">4 variations</option>
+            </select>
+          </label>
+          <button type="submit" id="generate" class="btn primary big">Generate</button>
+        </div>
+        <p class="muted small center">Each video is billed by Replicate. Ctrl+Enter to generate.</p>
+        <div id="form-messages" aria-live="polite"></div>
+      </form>
+
+      <div class="output">
+        <section id="queue-section" class="card" hidden>
+          <h2>In progress</h2>
+          <ul id="queue" class="queue"></ul>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h2>Your videos</h2>
+            <span id="video-count" class="muted small"></span>
+          </div>
+          <div id="gallery" class="gallery"></div>
+          <div id="gallery-empty" class="empty" hidden>
+            <p>No videos yet.</p>
+            <p class="muted small">Write a prompt and press Generate. Videos usually take 1–10 minutes.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+</body>
+</html>
