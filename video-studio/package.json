@@ -5,13 +5,15 @@
   "description": "Generate HD videos from text prompts with AI models on Replicate",
   "type": "module",
   "bin": {
-    "video-studio": "bin/video-studio.mjs"
+    "video-studio": "bin/video-studio.mjs",
+    "video-studio-web": "bin/video-studio-web.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "start": "node bin/video-studio.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "web": "node bin/video-studio-web.mjs"
   }
 }

@@ -33,6 +33,34 @@ succeeded (148s)
 
 No `npm install` is needed: the tool has no dependencies.
 
+## Web app (easiest)
+
+Video Studio also runs as a web page on your own computer. In this folder, run:
+
+```
+npm run web
+```
+
+(or `node bin/video-studio-web.mjs`). Your browser opens at http://127.0.0.1:3210.
+Keep the terminal window open while you use it, and press Ctrl+C there to stop.
+
+- **First time:** paste your Replicate token on the welcome screen. It's checked with
+  Replicate, then saved in `.env`, so you can skip setup step 3.
+- **Create:** write a prompt (or tap an example), pick a model and press **Generate**.
+  The settings shown are the chosen model's own settings, with the highest resolution
+  preselected. For models that can animate a photo, drag one onto the upload box.
+- **Progress:** each video shows its status and a timer, and can be canceled.
+  Up to 3 videos are generated at the same time; the rest wait in line.
+- **Your videos:** play, download, delete, or **Reuse settings** to start a new
+  video from an old one. The gallery shows the same `videos` folder the
+  command-line tool uses.
+
+Options: `--port 4000` to use another port, `--out my-videos` for another folder,
+`--no-open` to not open the browser automatically.
+
+The web app only accepts connections from this computer, and only from its own
+page, so other websites you visit can't use your token.
+
 ## Making videos
 
 ```bash
@@ -152,6 +180,11 @@ Describe **subject + action + setting + camera + style**, for example:
 npm test   # runs the test suite against a simulated Replicate API (no token needed)
 ```
 
-Code layout: `bin/video-studio.mjs` (entry point), `src/cli.mjs` (commands),
-`src/inputs.mjs` (matching options to model settings), `src/replicate.mjs` (API client),
-`src/presets.mjs` (model list).
+Code layout:
+
+- `bin/video-studio.mjs`: command-line entry point; `src/cli.mjs` holds its commands
+- `bin/video-studio-web.mjs`: web app entry point; `src/server.mjs` is the local server, `web/` the page
+- `src/generate.mjs`: runs one video job and saves it (shared by both)
+- `src/inputs.mjs`: matches options to each model's settings
+- `src/replicate.mjs`: Replicate API client
+- `src/presets.mjs`: model list
